@@ -22,6 +22,7 @@ Sistema full-stack para la gestión integral de un restaurante con roles diferen
 | Zustand | 5.x | Estado global (ligero, simple) |
 | React Router | 7.x | Enrutamiento |
 | TailwindCSS | 4.x | Estilos utilitarios |
+| shadcn/ui | latest | Componentes UI (sobre Radix + Tailwind) |
 
 ---
 
@@ -86,9 +87,9 @@ restorant-admin/
 │       ├── i18n.ts
 │       ├── assets/
 │       ├── components/        # Componentes reutilizables
-│       │   ├── ui/            # Botones, inputs, modals, etc.
-│       │   ├── layout/        # Header, Sidebar, MainLayout
-│       │   └── shared/        # Componentes compartidos entre roles
+│       │   ├── ui/            # shadcn/ui components (auto-generados por CLI)
+│       │   ├── layout/        # Header, Sidebar, MainLayout, BottomNav
+│       │   └── shared/        # Componentes de negocio compartidos entre roles
 │       ├── pages/             # Páginas por rol
 │       │   ├── auth/
 │       │   │   └── LoginPage.tsx
@@ -400,9 +401,19 @@ inventory:low-stock   # Alerta stock bajo (→ admin)
 
 ---
 
-## 8. Roles y Permisos - Detalle por Pantalla
+## 8. Roles, Dispositivos y Detalle por Pantalla
 
-### 8.1 ADMIN
+### 8.0 Dispositivos por Rol
+
+| Rol | Dispositivo | Viewport | Consideraciones UX |
+|---|---|---|---|
+| **Mesa (Cliente)** | Smartphone | 320-428px | Touch-first, thumb zone, scroll vertical, textos grandes, botones amplios |
+| **Mozo** | Tablet | 768-1024px | Touch, orientación landscape/portrait, gestos swipe, acceso rápido |
+| **Cajero** | Monitor desktop | 1280-1920px | Mouse + teclado, atajos de teclado, layout wide con paneles |
+| **Chef** | TV 32"+ | 1920px+ | Solo visualización a distancia, tipografía XL, alto contraste, colores de estado muy claros, sin interacción compleja (botones grandes) |
+| **Admin** | Notebook/Laptop | 1024-1440px | Mouse + teclado, dashboards con gráficos, tablas con datos, sidebar colapsable |
+
+### 8.1 ADMIN (Notebook/Laptop 1024-1440px)
 - **Dashboard**: Vista general con KPIs (ventas del día, pedidos activos, mesas ocupadas, alertas stock)
 - **Usuarios**: CRUD completo de empleados y asignación de roles
 - **Menú**: Gestión completa de categorías e items
@@ -410,30 +421,35 @@ inventory:low-stock   # Alerta stock bajo (→ admin)
 - **Inventario**: Control de stock, alertas de mínimos
 - **Reportes**: Ventas por período, productos más vendidos, rendimiento por mozo
 - **Vista en vivo**: Puede ver todo lo que ve cada rol en tiempo real
+- **Layout**: Sidebar colapsable + contenido principal, tablas con paginación, formularios en modales/sheets
 
-### 8.2 CAJERO (Cashier)
+### 8.2 CAJERO (Monitor Desktop 1280-1920px)
 - **Dashboard**: Pedidos listos para cobrar, resumen de caja del día
 - **Ventas**: Cobrar pedidos, seleccionar método de pago, imprimir ticket
 - **Historial**: Ventas realizadas en el turno
+- **Layout**: Panel split (lista pedidos a la izquierda, detalle a la derecha), atajos de teclado para cobro rápido
 
-### 8.3 MOZO (Waiter)
+### 8.3 MOZO (Tablet 768-1024px)
 - **Dashboard**: Vista de mesas asignadas con estado visual
-- **Mesas**: Mapa visual de mesas con colores por estado
-- **Notificaciones**: Alertas en tiempo real (mesa llama, pedido listo, etc.)
-- **Pedidos**: Crear pedido para una mesa, ver menú, agregar items
+- **Mesas**: Mapa visual de mesas con colores por estado, grilla adaptativa
+- **Notificaciones**: Alertas en tiempo real (mesa llama, pedido listo, etc.) con vibración/sonido
+- **Pedidos**: Crear pedido para una mesa, ver menú, agregar items con tap
 - **Pedidos activos**: Lista de pedidos en curso con estado
+- **Layout**: Bottom navigation (tabs), cards grandes para touch, swipe para acciones rápidas
 
-### 8.4 CHEF
-- **Dashboard/Cocina**: Cola de pedidos ordenados por tiempo
+### 8.4 CHEF (TV 32"+ 1920px+)
+- **Dashboard/Cocina**: Cola de pedidos ordenados por tiempo, tipografía extra grande
 - **Gestión de pedidos**: Cambiar estado (preparando → listo), cancelar items por faltante
-- **Tiempos**: Visualización de tiempo transcurrido por pedido
+- **Tiempos**: Visualización prominente de tiempo transcurrido por pedido con colores de alerta
 - **Alertas**: Notificar faltantes al admin
+- **Layout**: Grid de cards de pedidos, sin scroll complejo, colores semáforo (verde/amarillo/rojo por tiempo), botones XL, modo oscuro por defecto para cocina, sonido en nuevos pedidos
 
-### 8.5 MESA (Table User)
-- **Menú**: Vista del menú del restaurante con categorías, fotos, precios
-- **Pedido**: Armar pedido, agregar items, enviar al mozo
-- **Estado**: Ver estado de su pedido en tiempo real
-- **Llamar mozo**: Botón para notificar al mozo asignado
+### 8.5 MESA/CLIENTE (Smartphone 320-428px)
+- **Menú**: Vista del menú como feed vertical con categorías, fotos grandes, precios claros
+- **Pedido**: Armar pedido con carrito tipo e-commerce, agregar items con +/-, enviar al mozo
+- **Estado**: Ver estado de su pedido en tiempo real con progress steps
+- **Llamar mozo**: FAB (floating action button) siempre visible
+- **Layout**: Full mobile, navegación por tabs en bottom, sin sidebar, carrito como sheet deslizable desde abajo
 
 ---
 
@@ -492,12 +508,14 @@ services:
 1. Inicializar monorepo con estructura de carpetas
 2. Configurar Docker Compose completo (dev)
 3. Setup frontend: Vite + React 19 + TypeScript + TailwindCSS
-4. Setup backend: NestJS 11 + TypeORM + PostgreSQL
-5. Configurar ESLint + Prettier (ambos proyectos)
-6. Configurar Storybook
-7. Configurar i18n (español/inglés)
-8. Configurar Claude Code (.claude/, CLAUDE.md, hooks)
-9. Seed inicial de base de datos
+4. Instalar y configurar shadcn/ui (theme, componentes base)
+5. Setup backend: NestJS 11 + TypeORM + PostgreSQL
+6. Configurar ESLint + Prettier (ambos proyectos)
+7. Configurar Storybook (integrado con shadcn/ui)
+8. Configurar i18n (español/inglés)
+9. Crear layouts por dispositivo/rol (Mobile, Tablet, Desktop, Kitchen)
+10. Configurar Claude Code (.claude/, CLAUDE.md, hooks)
+11. Seed inicial de base de datos
 
 ### FASE 2: Autenticación y Base
 1. Módulo Auth backend (JWT, refresh tokens)
@@ -533,7 +551,7 @@ services:
 4. Reportes básicos
 
 ### FASE 7: Pulido
-1. Responsive design
+1. Testing responsive en todos los dispositivos/viewports
 2. Tests E2E de flujos principales
 3. Optimización de rendimiento
 4. Dockerfiles de producción
@@ -622,11 +640,22 @@ Comandos personalizados:
 ### 12.2 Frontend (React) - Simple y directo
 
 - **Pages como entry points**: Cada página es un componente que orquesta
-- **Componentes UI atómicos**: Button, Input, Modal, Card, Badge, etc.
+- **shadcn/ui para componentes base**: Button, Input, Dialog, Sheet, Card, Badge, Table, etc. (copiados al proyecto, customizables)
+- **Layouts por dispositivo**: Layouts específicos que adaptan la UI al dispositivo del rol
 - **Zustand para estado global**: Auth, orders activos, notificaciones
 - **Custom hooks para lógica**: useAuth, useSocket, useOrders
 - **Services para API**: Funciones simples con axios
 - **Sin over-abstraction**: No HOCs innecesarios, no context hell, no Redux
+
+### 12.3 Estrategia Responsive
+
+- **Mobile-first**: Estilos base para smartphone (Mesa), escalando hacia arriba
+- **Breakpoints TailwindCSS**: `sm` (640), `md` (768 - tablet/mozo), `lg` (1024 - laptop/admin), `xl` (1280 - desktop/cajero), `2xl` (1536 - TV/chef)
+- **Layouts por rol**: Cada rol tiene su propio layout wrapper que optimiza para su dispositivo
+  - `MobileLayout`: Bottom tabs, sin sidebar (Mesa)
+  - `TabletLayout`: Bottom nav o sidebar colapsable (Mozo)
+  - `DesktopLayout`: Sidebar fijo + header (Cajero, Admin)
+  - `KitchenLayout`: Fullscreen grid, sin navegación compleja, tipografía XXL (Chef)
 
 ---
 
@@ -663,9 +692,11 @@ axios
 socket.io-client
 react-i18next, i18next
 tailwindcss
-react-hot-toast          # Notificaciones toast
-lucide-react             # Iconos
-clsx                     # Class merging
+shadcn/ui                # Componentes UI (Button, Card, Dialog, Sheet, Table, etc.)
+  ├── @radix-ui/*        # Primitivos accesibles (instalados por shadcn)
+  ├── lucide-react       # Iconos (instalado por shadcn)
+  ├── clsx + tailwind-merge  # Class merging (instalado por shadcn)
+  └── sonner             # Toasts (componente shadcn)
 ```
 
 ### Backend
