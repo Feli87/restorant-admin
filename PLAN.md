@@ -211,21 +211,52 @@ restorant-admin/
 │       │   │   ├── sales.service.ts
 │       │   │   └── entities/
 │       │   │       └── sale.entity.ts
-│       │   └── notifications/
-│       │       ├── notifications.module.ts
-│       │       ├── notifications.gateway.ts  # Socket.io Gateway
-│       │       └── notifications.service.ts
+│       │   ├── notifications/
+│       │   │   ├── notifications.module.ts
+│       │   │   ├── notifications.gateway.ts  # Socket.io Gateway
+│       │   │   └── notifications.service.ts
+│       │   ├── ai/                            # MCP Server + AI Tools
+│       │   │   ├── ai.module.ts
+│       │   │   ├── tools/
+│       │   │   │   ├── kitchen.tools.ts
+│       │   │   │   ├── inventory.tools.ts
+│       │   │   │   ├── sales.tools.ts
+│       │   │   │   └── dashboard.tools.ts
+│       │   │   └── prompts/
+│       │   │       └── daily-report.prompt.ts
+│       │   ├── kitchen-monitor/
+│       │   │   ├── kitchen-monitor.module.ts
+│       │   │   └── kitchen-monitor.service.ts # @Interval scheduled checks
+│       │   ├── analytics/
+│       │   │   ├── analytics.module.ts
+│       │   │   ├── analytics.controller.ts
+│       │   │   └── analytics.service.ts       # Forecasting, peak hours, menu engineering
+│       │   └── waste/
+│       │       ├── waste.module.ts
+│       │       ├── waste.controller.ts
+│       │       └── waste.service.ts
 │       └── database/
 │           ├── migrations/
 │           └── seeds/
 │               └── initial-seed.ts
 │
+├── .mcp.json                        # MCP servers (PostgreSQL)
+├── CLAUDE.md                        # Contexto del proyecto (< 150 líneas)
 └── .claude/
-    ├── settings.json
-    └── commands/
-        ├── dev.md
-        ├── test.md
-        └── lint.md
+    ├── settings.json                # Permisos + hooks (team)
+    ├── settings.local.json          # Overrides personales (gitignored)
+    ├── hooks/
+    │   └── protect-files.sh         # Protege archivos sensibles
+    ├── commands/
+    │   ├── dev.md                   # /project:dev
+    │   ├── test.md                  # /project:test
+    │   ├── new-module.md            # /project:new-module <name>
+    │   ├── new-page.md              # /project:new-page <role/name>
+    │   ├── migrate.md               # /project:migrate <name>
+    │   └── review.md                # /project:review
+    └── agents/
+        ├── db-reviewer.md           # Revisa migraciones/schema
+        └── api-tester.md            # Testea endpoints con curl
 ```
 
 ---
@@ -288,14 +319,48 @@ restorant-admin/
 └──────────────────┘     └──────────────────┘
 ```
 
-### 5.2 Enums
+### 5.2 Entidades adicionales (AI & Analytics)
 
 ```
-UserRole:     ADMIN | CASHIER | WAITER | CHEF | TABLE_USER
-TableStatus:  AVAILABLE | OCCUPIED | RESERVED | CLEANING
-OrderStatus:  PENDING | CONFIRMED | PREPARING | READY | DELIVERED | CANCELLED
+┌──────────────────────┐     ┌──────────────────────┐
+│ menu_item_recipes     │     │    waste_logs          │
+├──────────────────────┤     ├──────────────────────┤
+│ id (PK)              │     │ id (PK)              │
+│ menu_item_id (FK)    │     │ inventory_item_id(FK)│
+│ inventory_item_id(FK)│     │ quantity             │
+│ quantity_per_unit    │     │ reason (enum)        │
+│                      │     │ logged_by (FK→users) │
+└──────────────────────┘     │ notes                │
+                             │ created_at           │
+┌──────────────────────┐     └──────────────────────┘
+│  table_sessions       │
+├──────────────────────┤     ┌──────────────────────┐
+│ id (PK)              │     │ satisfaction_metrics   │
+│ table_id (FK)        │     ├──────────────────────┤
+│ started_at           │     │ id (PK)              │
+│ ended_at             │     │ date                 │
+│ party_size           │     │ avg_score             │
+│ total_revenue        │     │ total_orders          │
+└──────────────────────┘     │ delayed_pct           │
+                             │ cancel_pct            │
+                             └──────────────────────┘
+```
+
+**Columnas nuevas en entidades existentes:**
+- `menu_items.station` (VARCHAR) - Estación de cocina (grill, fryer, salad, etc.)
+- `order_items.started_at` (TIMESTAMP) - Inicio de preparación
+- `order_items.completed_at` (TIMESTAMP) - Marcado como listo
+- `inventory_items.unit_cost` (DECIMAL) - Costo por unidad
+
+### 5.3 Enums
+
+```
+UserRole:        ADMIN | CASHIER | WAITER | CHEF | TABLE_USER
+TableStatus:     AVAILABLE | OCCUPIED | RESERVED | CLEANING
+OrderStatus:     PENDING | CONFIRMED | PREPARING | READY | DELIVERED | CANCELLED
 OrderItemStatus: PENDING | PREPARING | READY | CANCELLED
-PaymentMethod: CASH | CARD | TRANSFER
+PaymentMethod:   CASH | CARD | TRANSFER
+WasteReason:     EXPIRED | DAMAGED | OVER_PREPARED | RETURNED | OTHER
 ```
 
 ---
@@ -366,6 +431,36 @@ GET    /api/dashboard/stats     # Estadísticas generales
 GET    /api/dashboard/activity  # Actividad en tiempo real
 ```
 
+### 6.9 Analytics (Admin)
+```
+GET    /api/analytics/peak-hours          # Predicción de horas pico
+GET    /api/analytics/revenue-forecast    # Forecast de ingresos (7 días)
+GET    /api/analytics/menu-engineering    # Matriz de ingeniería de menú
+GET    /api/analytics/anomalies           # Anomalías KPI detectadas
+GET    /api/analytics/staff-performance   # Rendimiento por empleado
+GET    /api/analytics/table-turnover      # Rotación de mesas + RevPASH
+```
+
+### 6.10 Kitchen Monitor
+```
+GET    /api/kitchen/queue                 # Cola priorizada de pedidos
+GET    /api/kitchen/station-loads         # Carga por estación
+GET    /api/kitchen/delayed-orders        # Pedidos con demora
+```
+
+### 6.11 Waste (Admin)
+```
+GET    /api/waste                         # Listado de desperdicios
+POST   /api/waste                         # Registrar desperdicio
+GET    /api/waste/analysis                # Análisis con sugerencias
+```
+
+### 6.12 MCP (AI - embebido en backend)
+```
+GET    /api/mcp/sse                       # SSE transport para Claude Desktop
+POST   /api/mcp/messages                  # Tool calls via HTTP
+```
+
 ---
 
 ## 7. WebSocket Events (Socket.io)
@@ -397,6 +492,11 @@ order:ready           # Pedido listo (→ waiters, table)
 notification:new      # Notificación genérica
 table:waiter-called   # Alerta mozo (→ waiters)
 inventory:low-stock   # Alerta stock bajo (→ admin)
+order:delay-warning   # Pedido en demora amarilla (→ kitchen)
+order:delay-critical  # Pedido en demora roja (→ kitchen, admin)
+kitchen:bottleneck    # Estación sobrecargada (→ kitchen, admin)
+kpi:anomaly           # Anomalía detectada en KPIs (→ admin)
+order:wait-update     # Actualización tiempo de espera (→ table-{id})
 ```
 
 ---
@@ -550,7 +650,16 @@ services:
 3. Alertas de stock bajo
 4. Reportes básicos
 
-### FASE 7: Pulido
+### FASE 7: Inteligencia Artificial y Monitoreo
+1. Módulo AI backend con `@rekog/mcp-nest` (MCP server embebido)
+2. Kitchen Monitor: detección de demoras, priorización, cuellos de botella
+3. Inventory Intelligence: predicción de consumo, alertas con cantidades sugeridas
+4. Sales Analytics: predicción de horas pico, forecasting, menu engineering
+5. Estimación de tiempo de espera para clientes (real-time)
+6. Detección de anomalías en KPIs (Z-score)
+7. Chat AI para admin (consultas en lenguaje natural)
+
+### FASE 8: Pulido
 1. Testing responsive en todos los dispositivos/viewports
 2. Tests E2E de flujos principales
 3. Optimización de rendimiento
@@ -558,60 +667,430 @@ services:
 
 ---
 
-## 11. Configuración Claude Code
+## 11. Agente AI y MCP (Model Context Protocol)
 
-### 11.1 CLAUDE.md (root)
+### 11.1 Arquitectura AI
 
-Archivo de contexto principal con:
-- Descripción del proyecto y arquitectura
-- Comandos para levantar el entorno (docker compose)
-- Convenciones de código
-- Estructura de módulos
-- Patrones a seguir (ej: cómo crear un nuevo módulo NestJS, cómo crear una nueva página React)
+```
+┌──────────────────────────────────────────────────────────────┐
+│                     NestJS Backend                            │
+│                                                              │
+│  ┌─────────────┐   ┌──────────────────┐   ┌──────────────┐  │
+│  │ AI Module    │   │ Kitchen Monitor  │   │ Analytics    │  │
+│  │ (MCP Server) │   │ (@nestjs/schedule)│   │ Service      │  │
+│  │             │   │                  │   │              │  │
+│  │ Tools:      │   │ - Delay detect   │   │ - Peak hours │  │
+│  │ - kitchen   │   │ - Prioritization │   │ - Forecast   │  │
+│  │ - inventory │   │ - Bottlenecks    │   │ - Menu eng.  │  │
+│  │ - sales     │   │                  │   │ - Anomalies  │  │
+│  │ - orders    │   │      │           │   │              │  │
+│  └──────┬──────┘   └──────┼───────────┘   └──────────────┘  │
+│         │                 │                                   │
+│         ▼                 ▼                                   │
+│  ┌─────────────────────────────────────┐                     │
+│  │    Notifications Gateway (Socket.io) │                     │
+│  │    → kitchen, waiters, admin, table  │                     │
+│  └─────────────────────────────────────┘                     │
+└──────────────────────────────────────────────────────────────┘
+         │                          │
+         ▼                          ▼
+  Claude Desktop / CLI        Frontend (Admin AI Chat)
+  (via SSE/HTTP transport)    (via REST + WebSocket)
+```
 
-### 11.2 .claude/settings.json
+### 11.2 MCP Server embebido con @rekog/mcp-nest
+
+Integración directa en el backend NestJS. No necesita servidores MCP separados.
+
+**Dependencias:**
+```
+@rekog/mcp-nest
+@modelcontextprotocol/sdk
+zod (v4+)
+```
+
+**Estructura del módulo AI:**
+```
+backend/src/modules/ai/
+├── ai.module.ts              # Importa McpModule.forRoot()
+├── tools/
+│   ├── kitchen.tools.ts      # get_kitchen_queue, get_delayed_orders
+│   ├── inventory.tools.ts    # check_low_stock, get_consumption_rate
+│   ├── sales.tools.ts        # get_daily_summary, get_peak_hours
+│   ├── orders.tools.ts       # get_active_orders, get_order_history
+│   └── dashboard.tools.ts    # get_kpi_snapshot, get_anomalies
+├── prompts/
+│   ├── daily-report.prompt.ts
+│   └── demand-forecast.prompt.ts
+└── resources/
+    └── schema.resource.ts    # Expone esquema DB como recurso MCP
+```
+
+**Ejemplo de tool MCP:**
+```typescript
+@Tool({
+  name: 'get_kitchen_queue',
+  description: 'Get current kitchen order queue with wait times and delay status',
+  parameters: z.object({
+    status: z.enum(['PENDING', 'PREPARING', 'READY']).optional(),
+  }),
+})
+async getKitchenQueue({ status }) {
+  return this.ordersService.findByStatus(status);
+}
+```
+
+**Seguridad:**
+- Reusa los guards existentes (JwtAuthGuard, RolesGuard) en el módulo MCP
+- Todos los tools son read-only por defecto
+- Escrituras requieren confirmación humana via "elicitation"
+- Validación de parámetros con Zod schemas
+
+### 11.3 Kitchen Monitor (Monitoreo de Cocina)
+
+**Servicio schedulado** que corre cada 30 segundos via `@nestjs/schedule`:
+
+1. **Detección de demoras**: Compara tiempo real vs `prep_time_min` de cada item
+   - Amarillo: >= 100% del tiempo esperado
+   - Rojo: >= 150% del tiempo esperado
+   - Emite via WebSocket a room `kitchen`
+
+2. **Priorización inteligente de pedidos** (rule-based scoring):
+   - +2 pts/minuto de espera (max 40)
+   - +15 pts mesa VIP
+   - +10 pts grupo grande (6+)
+   - +10 pts pedido rápido (prep < 10min)
+   - +20 pts pedido vencido (> 2x tiempo esperado)
+   - Chef ve la cola ordenada por score
+
+3. **Detección de cuellos de botella** por estación:
+   - Nuevo campo `station` en `menu_items` (grill, fryer, salad, etc.)
+   - Monitorea carga concurrente por estación
+   - Alerta cuando una estación supera capacidad
+
+4. **Auto-calibración de tiempos de preparación**:
+   - Media móvil exponencial (alpha=0.3) de tiempos reales vs estimados
+   - Actualización semanal de `prep_time_min`
+
+### 11.4 Inventory Intelligence (Inventario Inteligente)
+
+1. **Predicción de consumo**: Media móvil ponderada de 7 días con ajuste por día de la semana
+   - Requiere nueva tabla `menu_item_recipes` (vincula menu items con inventory items + cantidad por unidad)
+   - Calcula velocidad de consumo y proyecta cuándo cada item llega al mínimo
+
+2. **Alertas con cantidades sugeridas**:
+   - Scheduled check cada hora
+   - Calcula: `suggestedQty = (predicted_7day_usage * 1.2) - current_stock`
+   - Urgencia: CRITICAL (<= 2 días), WARNING (<= 5 días), OK
+
+3. **Tracking de desperdicio** (nueva tabla `waste_logs`):
+   - Razones: EXPIRED, DAMAGED, OVER_PREPARED, RETURNED
+   - Análisis de costo impacto por categoría
+   - Sugerencias predefinidas por tipo de desperdicio
+
+### 11.5 Sales Analytics (Analítica de Ventas)
+
+1. **Predicción de horas pico**: Materialized view con patrón horario por día de la semana
+   - Heatmap 7x24 en dashboard admin
+   - Ajuste por tendencia reciente (últimas 2 semanas vs 90 días)
+
+2. **Revenue Forecasting**: Simple Exponential Smoothing (SES, alpha=0.3)
+   - Índice estacional por día de la semana
+   - Proyección a 7 días con banda de confianza
+
+3. **Menu Engineering Matrix** (Boston Matrix):
+   - Clasifica items en: STAR (alta popularidad + alta rentabilidad), PLOWHORSE (popular + bajo margen), PUZZLE (poco popular + alto margen), DOG (bajo-bajo)
+   - Recomendaciones automáticas por clasificación
+
+4. **Detección de anomalías en KPIs** (Z-score):
+   - Métricas monitoreadas: revenue/hora, ticket promedio, pedidos/hora, tasa de cancelación, tiempo promedio prep
+   - Compara valor actual vs distribución histórica (mismo día/hora, últimas 8 semanas)
+   - Alerta al admin cuando |Z| > 2.0
+
+### 11.6 Experiencia del Cliente (Mesa)
+
+1. **Estimación de tiempo de espera**:
+   - `maxPrepTime + queueWait` (pedidos adelante / throughput reciente)
+   - Push de actualización via WebSocket cada 2 minutos
+   - Frontend muestra progress bar animado
+
+2. **Recomendaciones inteligentes de menú**:
+   - Populares a esta hora del día (últimos 60 días)
+   - "Frecuentemente pedidos juntos" (pair scoring)
+   - Carrusel en la parte superior del menú
+
+3. **Satisfacción implícita** (sin encuestas):
+   - Score 0-100 basado en: propina, demora, cancelaciones, llamadas al mozo
+   - Agregación diaria en tabla `satisfaction_metrics`
+
+---
+
+## 12. Configuración Claude Code (Detallada)
+
+### 12.1 CLAUDE.md (root - conciso, < 150 líneas)
+
+```markdown
+# Restaurant Admin System
+
+Full-stack monorepo: React 19 + Vite 7 frontend, NestJS 11 backend,
+PostgreSQL 16, Socket.io real-time. Docker Compose for dev.
+
+## Project Structure
+- `frontend/` - React SPA: TailwindCSS 4 + shadcn/ui + Zustand 5
+- `backend/` - NestJS 11: TypeORM 0.3, JWT auth, Socket.io gateway, MCP AI tools
+
+## Commands
+- Start dev: `docker compose -f docker-compose.dev.yml up`
+- Frontend tests: `cd frontend && npx vitest run`
+- Backend tests: `cd backend && npm run test`
+- Lint: `npm run lint` (root workspace)
+- Format: `npm run format`
+- Migration: `cd backend && npx typeorm migration:generate src/database/migrations/Name -d src/config/database.config.ts`
+
+## Code Style
+- TypeScript strict mode, ES modules, functional React with hooks only
+- shadcn/ui components from `frontend/src/components/ui/`
+- Zustand for global state (authStore, orderStore, notificationStore)
+- NestJS: one service per module, DTOs with class-validator, Repository pattern
+- Conventional commits: feat:, fix:, chore:, refactor:
+
+## Architecture Rules
+IMPORTANT: Use Zustand only. NO Redux.
+IMPORTANT: Functional components only. NO class components.
+IMPORTANT: Backend modules: module.ts, controller.ts, service.ts, entities/, dto/
+IMPORTANT: All API endpoints prefixed with /api/
+IMPORTANT: shadcn/ui for ALL UI components. No custom CSS for existing primitives.
+
+## Verification
+After changes: `cd frontend && npx tsc --noEmit` and `cd backend && npx tsc --noEmit`
+```
+
+### 12.2 .claude/settings.json (Permisos + Hooks)
 
 ```json
 {
   "permissions": {
     "allow": [
-      "Bash(npm run lint)",
-      "Bash(npm run format)",
-      "Bash(npm run test)",
+      "Read",
+      "Glob",
+      "Grep",
+      "Write(frontend/src/**)",
+      "Write(backend/src/**)",
+      "Edit(frontend/src/**)",
+      "Edit(backend/src/**)",
+      "Bash(cd frontend && npx vitest *)",
+      "Bash(cd backend && npm run test *)",
+      "Bash(npm run lint *)",
+      "Bash(npm run format *)",
+      "Bash(npx prettier *)",
+      "Bash(npx eslint *)",
+      "Bash(npx tsc *)",
       "Bash(docker compose *)",
-      "Bash(npx typeorm *)"
+      "Bash(cd backend && npx typeorm *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(npm publish *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read fp; if echo \"$fp\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then npx prettier --write \"$fp\" 2>/dev/null; fi; }"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'Claude Code needs your attention'"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Reminder: Restaurant monorepo. frontend/ + backend/. Zustand not Redux. shadcn/ui. Conventional commits.'"
+          }
+        ]
+      }
     ]
   }
 }
 ```
 
-### 11.3 .claude/commands/
+### 12.3 .claude/hooks/protect-files.sh
 
-Comandos personalizados:
-- **dev.md**: Instrucciones para levantar el entorno de desarrollo
-- **test.md**: Cómo ejecutar tests (frontend y backend)
-- **lint.md**: Ejecutar linting y formateo
-- **new-module.md**: Template para crear un nuevo módulo NestJS
-- **new-page.md**: Template para crear una nueva página React
+Previene edición accidental de archivos sensibles:
+```bash
+#!/bin/bash
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+PROTECTED=(".env" "package-lock.json" ".git/" "docker-compose.yml")
+for pattern in "${PROTECTED[@]}"; do
+  if [[ "$FILE_PATH" == *"$pattern"* ]]; then
+    echo "Blocked: $FILE_PATH is protected. Ask user first." >&2
+    exit 2
+  fi
+done
+exit 0
+```
 
-### 11.4 Hooks sugeridos
+### 12.4 .claude/commands/ (Slash Commands)
+
+**dev.md** - `/project:dev`
+```markdown
+---
+allowed-tools: Bash(docker compose *)
+description: Start the development environment
+---
+Start full dev environment with `docker compose -f docker-compose.dev.yml up -d`.
+Report service status and URLs: Frontend :5173, Backend :3000, Storybook :6006, pgAdmin :5050.
+```
+
+**new-module.md** - `/project:new-module <name>`
+```markdown
+---
+allowed-tools: Bash(mkdir *), Write, Edit, Read
+argument-hint: <module-name>
+description: Scaffold a new NestJS backend module
+---
+Create NestJS module "$ARGUMENTS" in backend/src/modules/$ARGUMENTS/ with:
+module.ts, controller.ts, service.ts, entities/, dto/. Follow existing patterns.
+Register in app.module.ts.
+```
+
+**new-page.md** - `/project:new-page <role/name>`
+```markdown
+---
+allowed-tools: Write, Edit, Read
+argument-hint: <role>/<page-name>
+description: Scaffold a new React page
+---
+Create page at frontend/src/pages/$ARGUMENTS.tsx. Use appropriate layout for role.
+Import shadcn/ui, use i18n for text. Add route in router.tsx with RoleGuard.
+```
+
+**test.md** - `/project:test [frontend|backend|all]`
+```markdown
+---
+allowed-tools: Bash(cd frontend && npx vitest *), Bash(cd backend && npm run test *)
+argument-hint: [frontend|backend|all]
+description: Run project tests
+---
+Run tests for "$ARGUMENTS" (default: all). Report results with failures highlighted.
+```
+
+**migrate.md** - `/project:migrate <name>`
+```markdown
+---
+allowed-tools: Bash(cd backend && npx typeorm *)
+argument-hint: <migration-name>
+description: Generate and run TypeORM migration
+---
+Generate migration "$ARGUMENTS", show it, ask if should run.
+```
+
+**review.md** - `/project:review`
+```markdown
+---
+description: Review uncommitted changes for issues
+---
+Run git diff, check for: TS errors, security issues, missing DTOs, naming consistency.
+Verify shadcn/ui usage, no custom CSS for primitives. Summary with suggestions.
+```
+
+### 12.5 .claude/agents/ (Subagentes especializados)
+
+**db-reviewer.md** - Revisa migraciones y esquema
+```markdown
+---
+name: Database Reviewer
+description: Reviews database migrations and schema changes
+model: claude-sonnet-4-6
+allowed-tools: Read, Glob, Grep, Bash(cd backend && npx typeorm *)
+max-turns: 20
+---
+Review migrations/entities for: missing indexes, FK constraints, column types,
+reversibility, snake_case naming. Reference schema in PLAN.md section 5.
+```
+
+**api-tester.md** - Testea endpoints
+```markdown
+---
+name: API Tester
+description: Tests NestJS API endpoints
+model: claude-haiku-4-5
+allowed-tools: Bash(curl *), Read, Grep
+max-turns: 30
+---
+Test all CRUD operations for given endpoint. Backend at http://localhost:3000/api/.
+Verify response shapes, status codes, error handling.
+```
+
+### 12.6 .mcp.json (MCP Servers para desarrollo)
 
 ```json
 {
-  "hooks": {
-    "pre-commit": "npm run lint:fix && npm run format",
-    "pre-push": "npm run test"
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y", "@bytebase/dbhub",
+        "--dsn", "postgresql://restaurant_user:restaurant_pass@localhost:5432/restaurant_db"
+      ]
+    }
   }
 }
 ```
 
-### 11.5 ESLint Config
+Permite a Claude Code consultar directamente la base de datos durante desarrollo:
+- "Show me the schema for the orders table"
+- "Find all orders with status PREPARING"
+- "What are the most ordered menu items?"
+
+### 12.7 ESLint Config
 
 - **Backend**: `@typescript-eslint` con reglas de NestJS
 - **Frontend**: `@typescript-eslint` + `eslint-plugin-react` + `eslint-plugin-react-hooks`
-- Reglas compartidas: no-unused-vars (error), no-console (warn), prefer-const, etc.
+- Reglas compartidas: no-unused-vars (error), no-console (warn), prefer-const
 
-### 11.6 Prettier Config
+### 12.8 Prettier Config
 
 ```json
 {
@@ -706,8 +1185,12 @@ shadcn/ui                # Componentes UI (Button, Card, Dialog, Sheet, Table, e
 @nestjs/jwt, @nestjs/passport, passport-jwt
 @nestjs/websockets, @nestjs/platform-socket.io
 @nestjs/config
+@nestjs/schedule              # Tareas programadas (kitchen monitor, analytics)
 class-validator, class-transformer
 bcrypt
+@rekog/mcp-nest              # MCP server embebido para AI tools
+@modelcontextprotocol/sdk    # SDK core de MCP
+zod                          # Validación de parámetros MCP tools
 ```
 
 ### Dev
@@ -755,8 +1238,10 @@ Una vez aprobado este plan, comenzaré con la **Fase 1** completa:
 - Crear toda la estructura de carpetas
 - Configurar Docker Compose funcional
 - Setup de ambos proyectos (frontend + backend)
-- Configurar todas las herramientas de desarrollo
-- Crear CLAUDE.md y configuraciones de Claude Code
+- Configurar shadcn/ui + Storybook + i18n
+- Configurar todas las herramientas de desarrollo (ESLint, Prettier)
+- Crear CLAUDE.md, .claude/ (settings, hooks, commands, agents), .mcp.json
 - Seed inicial de base de datos con datos de ejemplo
+- Layouts por dispositivo/rol
 
-El resultado será un entorno de desarrollo totalmente funcional donde con `docker compose up` se levanta todo el stack listo para desarrollar.
+El resultado será un entorno de desarrollo totalmente funcional donde con `docker compose up` se levanta todo el stack listo para desarrollar, y Claude Code configurado al máximo para desarrollo asistido por AI.
