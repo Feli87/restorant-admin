@@ -1,0 +1,140 @@
+{
+  "nav": {
+    "dashboard": "Panel de Control",
+    "orders": "Pedidos",
+    "menu": "Menú",
+    "tables": "Mesas",
+    "inventory": "Inventario",
+    "sales": "Ventas",
+    "settings": "Configuración"
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "logout": "Cerrar Sesión",
+    "register": "Registrarse",
+    "email": "Correo Electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "rememberMe": "Recordarme",
+    "loginError": "Credenciales inválidas",
+    "sessionExpired": "Tu sesión ha expirado. Inicia sesión nuevamente."
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar",
+    "confirm": "Confirmar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "refresh": "Actualizar",
+    "close": "Cerrar",
+    "add": "Agregar",
+    "remove": "Quitar",
+    "print": "Imprimir"
+  },
+  "status": {
+    "loading": "Cargando...",
+    "error": "Ha ocurrido un error",
+    "success": "Operación exitosa",
+    "notFound": "No encontrado",
+    "noData": "No hay datos disponibles",
+    "saving": "Guardando...",
+    "deleting": "Eliminando...",
+    "updating": "Actualizando..."
+  },
+  "orders": {
+    "title": "Pedidos",
+    "newOrder": "Nuevo Pedido",
+    "orderNumber": "Número de Pedido",
+    "table": "Mesa",
+    "waiter": "Mesero",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "tax": "Impuesto",
+    "tip": "Propina",
+    "status": {
+      "pending": "Pendiente",
+      "preparing": "En Preparación",
+      "ready": "Listo",
+      "served": "Servido",
+      "completed": "Completado",
+      "cancelled": "Cancelado"
+    },
+    "itemStatus": {
+      "pending": "Pendiente",
+      "preparing": "Preparando",
+      "ready": "Listo",
+      "served": "Servido",
+      "cancelled": "Cancelado"
+    }
+  },
+  "menu": {
+    "title": "Menú",
+    "category": "Categoría",
+    "categories": "Categorías",
+    "item": "Artículo",
+    "items": "Artículos",
+    "price": "Precio",
+    "description": "Descripción",
+    "available": "Disponible",
+    "unavailable": "No Disponible",
+    "addItem": "Agregar Artículo",
+    "addCategory": "Agregar Categoría"
+  },
+  "tables": {
+    "title": "Mesas",
+    "tableNumber": "Número de Mesa",
+    "capacity": "Capacidad",
+    "status": {
+      "available": "Disponible",
+      "occupied": "Ocupada",
+      "reserved": "Reservada",
+      "outOfService": "Fuera de Servicio"
+    }
+  },
+  "inventory": {
+    "title": "Inventario",
+    "product": "Producto",
+    "quantity": "Cantidad",
+    "unit": "Unidad",
+    "minStock": "Stock Mínimo",
+    "lowStock": "Stock Bajo"
+  },
+  "sales": {
+    "title": "Ventas",
+    "today": "Hoy",
+    "thisWeek": "Esta Semana",
+    "thisMonth": "Este Mes",
+    "revenue": "Ingresos",
+    "ordersCount": "Cantidad de Pedidos",
+    "averageTicket": "Ticket Promedio"
+  },
+  "settings": {
+    "title": "Configuración",
+    "general": "General",
+    "profile": "Perfil",
+    "language": "Idioma",
+    "theme": "Tema",
+    "notifications": "Notificaciones"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "cashier": "Cajero",
+    "waiter": "Mesero",
+    "chef": "Chef",
+    "tableUser": "Usuario de Mesa"
+  },
+  "confirmation": {
+    "delete": "¿Estás seguro de que deseas eliminar este elemento?",
+    "cancel": "¿Estás seguro de que deseas cancelar?",
+    "logout": "¿Estás seguro de que deseas cerrar sesión?"
+  }
+}
