@@ -6,7 +6,13 @@
     "tables": "Tables",
     "inventory": "Inventory",
     "sales": "Sales",
-    "settings": "Settings"
+    "reports": "Reports",
+    "users": "Users",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "logout": "Log Out",
+    "order": "My Order",
+    "status": "Status"
   },
   "auth": {
     "login": "Log In",
@@ -15,10 +21,18 @@
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm Password",
+    "name": "Full Name",
     "forgotPassword": "Forgot your password?",
     "rememberMe": "Remember me",
     "loginError": "Invalid credentials",
-    "sessionExpired": "Your session has expired. Please log in again."
+    "loginSubtitle": "Enter your credentials to access the system",
+    "registerSubtitle": "Create an account to access the system",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "sessionExpired": "Your session has expired. Please log in again.",
+    "registerSuccess": "Account created successfully",
+    "registerError": "Error creating account",
+    "passwordMismatch": "Passwords do not match"
   },
   "actions": {
     "save": "Save",
@@ -49,6 +63,12 @@
     "saving": "Saving...",
     "deleting": "Deleting...",
     "updating": "Updating..."
+  },
+  "dashboard": {
+    "activeOrders": "Active Orders",
+    "todayRevenue": "Today's Revenue",
+    "occupiedTables": "Occupied Tables",
+    "activeStaff": "Active Staff"
   },
   "orders": {
     "title": "Orders",
@@ -116,6 +136,37 @@
     "revenue": "Revenue",
     "ordersCount": "Orders Count",
     "averageTicket": "Average Ticket"
+  },
+  "users": {
+    "title": "Users",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "addUser": "Add User",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "reports": {
+    "title": "Reports",
+    "dailySummary": "Daily Summary",
+    "weeklySummary": "Weekly Summary",
+    "monthlySummary": "Monthly Summary"
+  },
+  "kitchen": {
+    "title": "Kitchen",
+    "noOrders": "No pending orders"
+  },
+  "cashier": {
+    "title": "Cashier",
+    "readyOrders": "Orders Ready for Payment"
+  },
+  "waiter": {
+    "title": "My Tables",
+    "myTables": "Assigned Tables"
+  },
+  "table": {
+    "title": "Table {{number}}"
   },
   "settings": {
     "title": "Settings",

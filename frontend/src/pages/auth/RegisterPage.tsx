@@ -16,25 +16,32 @@ const roleRedirects: Record<UserRole, string> = {
   TABLE_USER: '/table/1',
 };
 
-export function LoginPage() {
+export function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { register } = useAuth();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
+    if (password !== confirmPassword) {
+      setError(t('auth.passwordMismatch'));
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await login(email, password);
+      const response = await register(name, email, password);
       navigate(roleRedirects[response.user.role]);
     } catch {
-      setError(t('auth.loginError'));
+      setError(t('auth.registerError'));
     } finally {
       setLoading(false);
     }
@@ -44,11 +51,21 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">{t('auth.login')}</CardTitle>
-          <CardDescription>{t('auth.loginSubtitle')}</CardDescription>
+          <CardTitle className="text-2xl">{t('auth.register')}</CardTitle>
+          <CardDescription>{t('auth.registerSubtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">{t('auth.name')}</Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
@@ -56,7 +73,6 @@ export function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@restaurant.com"
                 required
               />
             </div>
@@ -70,17 +86,27 @@ export function LoginPage() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? t('status.loading') : t('auth.login')}
+              {loading ? t('status.loading') : t('auth.register')}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
-            {t('auth.noAccount')}{' '}
-            <Link to="/register" className="text-primary underline-offset-4 hover:underline">
-              {t('auth.register')}
+            {t('auth.hasAccount')}{' '}
+            <Link to="/login" className="text-primary underline-offset-4 hover:underline">
+              {t('auth.login')}
             </Link>
           </p>
         </CardFooter>

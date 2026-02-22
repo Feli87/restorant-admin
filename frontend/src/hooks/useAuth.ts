@@ -9,30 +9,30 @@ export const useAuth = () => {
   const login = useCallback(
     async (email: string, password: string) => {
       const response = await authService.login({ email, password });
-      setAuth(response.user, response.token);
+      setAuth(
+        { ...response.user, isActive: true, createdAt: '', updatedAt: '' },
+        response.access_token,
+      );
       return response;
     },
-    [setAuth]
+    [setAuth],
   );
 
   const register = useCallback(
     async (name: string, email: string, password: string) => {
       const response = await authService.register({ name, email, password });
-      setAuth(response.user, response.token);
+      setAuth(
+        { ...response.user, isActive: true, createdAt: '', updatedAt: '' },
+        response.access_token,
+      );
       return response;
     },
-    [setAuth]
+    [setAuth],
   );
 
-  const logout = useCallback(async () => {
-    try {
-      await authService.logout();
-    } catch {
-      // Proceed with local logout even if API call fails
-    } finally {
-      disconnectSocket();
-      clearAuth();
-    }
+  const logout = useCallback(() => {
+    disconnectSocket();
+    clearAuth();
   }, [clearAuth]);
 
   return {

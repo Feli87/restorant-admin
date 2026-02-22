@@ -1,11 +1,10 @@
 import { type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import type { UserRole } from '../types/user';
 
 interface RoleGuardProps {
   children: ReactNode;
-  allowedRoles?: UserRole[];
+  allowedRoles?: string[];
   redirectTo?: string;
 }
 

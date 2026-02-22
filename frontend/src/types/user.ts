@@ -11,8 +11,6 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  avatar?: string;
-  restaurantId: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
