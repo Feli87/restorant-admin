@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { InventoryItem } from './entities/inventory-item.entity';
+import { CreateInventoryItemDto, UpdateInventoryItemDto } from './dto/inventory.dto';
 
 @Controller('inventory')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -40,17 +41,17 @@ export class InventoryController {
 
   @Post()
   @Roles('ADMIN')
-  async create(@Body() data: Partial<InventoryItem>): Promise<InventoryItem> {
-    return this.inventoryService.create(data);
+  async create(@Body() dto: CreateInventoryItemDto): Promise<InventoryItem> {
+    return this.inventoryService.create(dto);
   }
 
   @Put(':id')
   @Roles('ADMIN')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<InventoryItem>,
+    @Body() dto: UpdateInventoryItemDto,
   ): Promise<InventoryItem> {
-    return this.inventoryService.update(id, data);
+    return this.inventoryService.update(id, dto);
   }
 
   @Delete(':id')

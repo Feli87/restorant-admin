@@ -14,7 +14,13 @@ import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
-import { Order, OrderStatus } from './entities/order.entity';
+import { Order } from './entities/order.entity';
+import {
+  CreateOrderDto,
+  UpdateOrderDto,
+  UpdateOrderStatusDto,
+  UpdateOrderItemStatusDto,
+} from './dto/create-order.dto';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -35,26 +41,26 @@ export class OrdersController {
 
   @Post()
   @Roles('ADMIN', 'WAITER', 'TABLE_USER')
-  async create(@Body() data: any): Promise<Order> {
-    return this.ordersService.create(data);
+  async create(@Body() createOrderDto: CreateOrderDto): Promise<Order> {
+    return this.ordersService.create(createOrderDto);
   }
 
   @Put(':id')
   @Roles('ADMIN', 'WAITER')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<Order>,
+    @Body() updateOrderDto: UpdateOrderDto,
   ): Promise<Order> {
-    return this.ordersService.update(id, data);
+    return this.ordersService.update(id, updateOrderDto);
   }
 
   @Patch(':id/status')
   @Roles('ADMIN', 'WAITER', 'CASHIER', 'CHEF')
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body('status') status: OrderStatus,
+    @Body() dto: UpdateOrderStatusDto,
   ): Promise<Order> {
-    return this.ordersService.updateStatus(id, status);
+    return this.ordersService.updateStatus(id, dto.status);
   }
 
   @Patch(':id/items/:itemId/status')
@@ -62,9 +68,9 @@ export class OrdersController {
   async updateItemStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('itemId', ParseUUIDPipe) itemId: string,
-    @Body('status') status: string,
+    @Body() dto: UpdateOrderItemStatusDto,
   ) {
-    return this.ordersService.updateItemStatus(id, itemId, status);
+    return this.ordersService.updateItemStatus(id, itemId, dto.status);
   }
 
   @Delete(':id')

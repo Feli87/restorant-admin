@@ -15,6 +15,12 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Category } from './entities/category.entity';
 import { MenuItem } from './entities/menu-item.entity';
+import {
+  CreateCategoryDto,
+  UpdateCategoryDto,
+  CreateMenuItemDto,
+  UpdateMenuItemDto,
+} from './dto/menu.dto';
 
 @Controller('menu')
 export class MenuController {
@@ -35,8 +41,8 @@ export class MenuController {
   @Post('categories')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  async createCategory(@Body() data: Partial<Category>): Promise<Category> {
-    return this.menuService.createCategory(data);
+  async createCategory(@Body() dto: CreateCategoryDto): Promise<Category> {
+    return this.menuService.createCategory(dto);
   }
 
   @Put('categories/:id')
@@ -44,9 +50,9 @@ export class MenuController {
   @Roles('ADMIN')
   async updateCategory(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<Category>,
+    @Body() dto: UpdateCategoryDto,
   ): Promise<Category> {
-    return this.menuService.updateCategory(id, data);
+    return this.menuService.updateCategory(id, dto);
   }
 
   @Delete('categories/:id')
@@ -71,8 +77,8 @@ export class MenuController {
   @Post('items')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  async createMenuItem(@Body() data: Partial<MenuItem>): Promise<MenuItem> {
-    return this.menuService.createMenuItem(data);
+  async createMenuItem(@Body() dto: CreateMenuItemDto): Promise<MenuItem> {
+    return this.menuService.createMenuItem(dto);
   }
 
   @Put('items/:id')
@@ -80,9 +86,9 @@ export class MenuController {
   @Roles('ADMIN')
   async updateMenuItem(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<MenuItem>,
+    @Body() dto: UpdateMenuItemDto,
   ): Promise<MenuItem> {
-    return this.menuService.updateMenuItem(id, data);
+    return this.menuService.updateMenuItem(id, dto);
   }
 
   @Delete('items/:id')

@@ -7,12 +7,14 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Sale } from './entities/sale.entity';
+import { CreateSaleDto } from './dto/sale.dto';
 
 @Controller('sales')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -29,6 +31,9 @@ export class SalesController {
   @Roles('ADMIN', 'CASHIER')
   async getDailySummary(@Query('date') dateStr: string) {
     const date = dateStr ? new Date(dateStr) : new Date();
+    if (isNaN(date.getTime())) {
+      throw new BadRequestException('Invalid date format. Use YYYY-MM-DD.');
+    }
     return this.salesService.getDailySummary(date);
   }
 
@@ -40,7 +45,7 @@ export class SalesController {
 
   @Post()
   @Roles('ADMIN', 'CASHIER')
-  async create(@Body() data: Partial<Sale>): Promise<Sale> {
-    return this.salesService.create(data);
+  async create(@Body() dto: CreateSaleDto): Promise<Sale> {
+    return this.salesService.create(dto);
   }
 }

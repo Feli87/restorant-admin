@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
-import { OrderItem } from './entities/order-item.entity';
+import { OrderItem, OrderItemStatus } from './entities/order-item.entity';
 import { NotificationsService } from '@/modules/notifications/notifications.service';
+import { CreateOrderDto, UpdateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -33,7 +34,11 @@ export class OrdersService {
     return order;
   }
 
-  async create(data: Partial<Order> & { items?: Partial<OrderItem>[] }): Promise<Order> {
+  async create(data: CreateOrderDto): Promise<Order> {
+    if (!data.items || data.items.length === 0) {
+      throw new BadRequestException('Order must contain at least one item');
+    }
+
     const order = this.orderRepository.create({
       table_id: data.table_id,
       waiter_id: data.waiter_id,
@@ -43,22 +48,23 @@ export class OrdersService {
 
     const savedOrder = await this.orderRepository.save(order);
 
-    if (data.items && data.items.length > 0) {
-      const orderItems = data.items.map((item) =>
-        this.orderItemRepository.create({
-          ...item,
-          order_id: savedOrder.id,
-        }),
-      );
-      await this.orderItemRepository.save(orderItems);
+    const orderItems = data.items.map((item) =>
+      this.orderItemRepository.create({
+        menu_item_id: item.menu_item_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        notes: item.notes,
+        order_id: savedOrder.id,
+      }),
+    );
+    await this.orderItemRepository.save(orderItems);
 
-      const total = orderItems.reduce(
-        (sum, item) => sum + Number(item.unit_price) * item.quantity,
-        0,
-      );
-      savedOrder.total = total;
-      await this.orderRepository.save(savedOrder);
-    }
+    const total = orderItems.reduce(
+      (sum, item) => sum + Number(item.unit_price) * item.quantity,
+      0,
+    );
+    savedOrder.total = total;
+    await this.orderRepository.save(savedOrder);
 
     this.notificationsService.notifyNewOrder(savedOrder);
 
@@ -75,7 +81,7 @@ export class OrdersService {
     return this.findOne(updatedOrder.id);
   }
 
-  async update(id: string, data: Partial<Order>): Promise<Order> {
+  async update(id: string, data: UpdateOrderDto): Promise<Order> {
     const order = await this.findOne(id);
     Object.assign(order, data);
     await this.orderRepository.save(order);
@@ -90,7 +96,7 @@ export class OrdersService {
   async updateItemStatus(
     orderId: string,
     itemId: string,
-    status: string,
+    status: OrderItemStatus,
   ): Promise<OrderItem> {
     const orderItem = await this.orderItemRepository.findOne({
       where: { id: itemId, order_id: orderId },
@@ -99,12 +105,12 @@ export class OrdersService {
       throw new NotFoundException(`Order item with ID "${itemId}" not found`);
     }
 
-    orderItem.status = status as any;
+    orderItem.status = status;
 
-    if (status === 'PREPARING' && !orderItem.started_at) {
+    if (status === OrderItemStatus.PREPARING && !orderItem.started_at) {
       orderItem.started_at = new Date();
     }
-    if (status === 'READY' || status === 'SERVED') {
+    if (status === OrderItemStatus.READY || status === OrderItemStatus.SERVED) {
       orderItem.completed_at = new Date();
     }
 

@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Table } from './entities/table.entity';
+import { CreateTableDto, UpdateTableDto } from './dto/table.dto';
 
 @Controller('tables')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -34,17 +35,17 @@ export class TablesController {
 
   @Post()
   @Roles('ADMIN')
-  async create(@Body() data: Partial<Table>): Promise<Table> {
-    return this.tablesService.create(data);
+  async create(@Body() dto: CreateTableDto): Promise<Table> {
+    return this.tablesService.create(dto);
   }
 
   @Put(':id')
   @Roles('ADMIN', 'WAITER')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<Table>,
+    @Body() dto: UpdateTableDto,
   ): Promise<Table> {
-    return this.tablesService.update(id, data);
+    return this.tablesService.update(id, dto);
   }
 
   @Delete(':id')
